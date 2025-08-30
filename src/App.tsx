@@ -1,17 +1,7 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 
 import "./App.css";
-import { TagStore, Trie } from "./TagStore";
-
-const debounce = (callback: (...callbackArgs: any) => void, wait: number) => {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  return (...args: []) => {
-    window.clearTimeout(timeoutId);
-    timeoutId = window.setTimeout(() => {
-      callback.apply(null, args);
-    }, wait);
-  };
-};
+import { TagStore } from "./TagStore";
 
 interface ValidateDataFailure<T> {
   success: false;
