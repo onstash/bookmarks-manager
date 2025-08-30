@@ -6,3 +6,43 @@ html {
   justify-content: center;
   height: 100%;
 }
+
+.flex {
+  display: flex;
+}
+
+.row {
+  flex-direction: row;
+}
+
+.column {
+  flex-direction: column;
+}
+
+.justifyContentBetween {
+  justify-content: space-between;
+}
+
+.gap-4 {
+  gap: 4;
+}
+
+.gap-8 {
+  gap: 8;
+}
+
+.bg-grey-1 {
+  background-color: #F2F2F2;
+}
+
+.spacing-8 {
+  padding: 8px;
+}
+
+.border-radius-8 {
+  border-radius: 8px;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}

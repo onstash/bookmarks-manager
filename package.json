@@ -3,17 +3,19 @@
   "private": true,
   "version": "0.0.0",
   "source": "src/index.html",
+  "browserslist": "> 0.5%, last 2 versions, not dead",
   "scripts": {
     "start": "parcel",
     "build": "parcel build"
   },
   "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "lodash.debounce": "latest"
   },
   "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
     "parcel": "^2.14.0"
   }
 }
