@@ -3,6 +3,7 @@ import { ChangeEvent, useEffect, useRef, useState } from "react";
 import "./App.css";
 import { TagStore } from "./TagStore";
 import type { ValidateData } from "./types/types-helpers";
+import { validateString } from "./validators/string";
 
 export function App() {
   const contentIDRef = useRef<HTMLInputElement>(null);
@@ -49,62 +50,22 @@ export function App() {
     setContentTagsAutoSuggestions(() => suggestions);
   };
 
+  const [selectedContentTags, setSelectedContentTags] = useState<Set<string>>(
+    new Set()
+  );
+
   function validateContentID(contentID: string): ValidateData<string> {
-    if (typeof contentID !== "string") {
-      return {
-        success: false,
-        error: {
-          message: "contentID must be a string",
-        },
-      };
-    }
-    if (!contentID || !contentID.length) {
-      return {
-        success: false,
-        error: {
-          message: "contentID must be a valid string",
-        },
-      };
-    }
-    const contentIDTrimmed = contentID.trim();
-    if (!contentIDTrimmed || !contentIDTrimmed.length) {
-      return {
-        success: false,
-        error: {
-          message: "contentID must be a valid string",
-        },
-      };
-    }
-    return {
-      success: true,
-      data: contentIDTrimmed,
-    };
+    return validateString(contentID, {
+      key: "contentID",
+    });
   }
 
   function validateContentTags(tagsStr: string): ValidateData<Array<string>> {
-    if (typeof tagsStr !== "string") {
-      return {
-        success: false,
-        error: {
-          message: "tags must be a string",
-        },
-      };
-    }
-    if (!tagsStr || !tagsStr.length) {
-      return {
-        success: false,
-        error: {
-          message: "tags must be a valid string",
-        },
-      };
-    }
-    if (!tagsStr.trim() || !tagsStr.trim().length) {
-      return {
-        success: false,
-        error: {
-          message: "tags must be a valid string",
-        },
-      };
+    const result = validateString(tagsStr, {
+      key: "tagsStr",
+    });
+    if (!result.success) {
+      return result;
     }
     const tags = tagsStr.split(",");
     const filteredTagsSet = new Set<string>();
@@ -130,49 +91,53 @@ export function App() {
   }
 
   const [isButtonDisabled, setButtonDisabled] = useState<boolean>(false);
+  function enableButton() {
+    setButtonDisabled(false);
+  }
+  function disableButton() {
+    setButtonDisabled(true);
+  }
 
   function buttonOnClickHandler() {
     resetContentTagsAutoSuggestions();
-    setButtonDisabled(true);
+    disableButton();
     const contentIDValidation = validateContentID(contentIDRef.current!.value);
     if (!contentIDValidation.success) {
       alert(contentIDValidation.error.message);
-      setButtonDisabled(false);
+      enableButton();
       return;
     }
     const contentTagsValidation = validateContentTags(
       contentTagsStringRef.current!.value
     );
-    if (!contentTagsValidation.success) {
-      alert(contentTagsValidation.error.message);
-      setButtonDisabled(false);
+    if (!contentTagsValidation.success && !selectedContentTags.size) {
+      alert("At least 1 selected content tag must be present!");
+      enableButton();
       return;
     }
     contentIDRef.current!.value = "";
     contentTagsStringRef.current!.value = "";
 
     const contentID = contentIDValidation.data;
-    const contentTags = contentTagsValidation.data;
+    const contentTags = contentTagsValidation.success
+      ? contentTagsValidation.data
+      : [...selectedContentTags];
 
     tagStoreRef.current!.addTags(contentTags, contentID);
 
     console.log(tagStoreRef.current!.exportJSON());
-    setButtonDisabled(false);
+    enableButton();
+    return;
   }
 
   function handleContentTagSuggestionClick(suggestion: string) {
-    const contentTagsStringInputVal = contentTagsStringRef.current!.value;
-    const contentTagsStringInputValCount = contentTagsStringInputVal.length;
-    if (!contentTagsStringInputValCount) {
-      contentTagsStringRef.current!.value = suggestion;
-      return;
-    }
-    if (contentTagsStringInputVal.endsWith(",")) {
-      contentTagsStringRef.current!.value = `${contentTagsStringInputVal}${suggestion}`;
-      return;
-    }
-    contentTagsStringRef.current!.value = `${contentTagsStringInputVal},${suggestion}`;
+    contentTagsStringRef.current!.value = "";
     resetContentTagsAutoSuggestions();
+    setSelectedContentTags((prev) => {
+      const current = new Set(prev);
+      current.add(suggestion);
+      return current;
+    });
   }
 
   return (
@@ -192,6 +157,31 @@ export function App() {
             ref={contentTagsStringRef}
             onChange={contentTagsOnChangeHandler}
           />
+          <section className="flex row justifyContentBetween gap-4">
+            {selectedContentTags.size ? (
+              <section className="flex column gap-8">
+                {[...selectedContentTags].map((suggestion) => {
+                  return (
+                    <div
+                      key={suggestion}
+                      className="bg-green-1 spacing-8 border-radius-8 cursor-pointer"
+                      onClick={() => {
+                        if (confirm("Are you sure you want to remove it?")) {
+                          setSelectedContentTags((prev) => {
+                            const current = new Set(prev);
+                            current.delete(suggestion);
+                            return current;
+                          });
+                        }
+                      }}
+                    >
+                      {suggestion}
+                    </div>
+                  );
+                })}
+              </section>
+            ) : null}
+          </section>
         </section>
 
         <section className="flex row justifyContentBetween gap-8">
