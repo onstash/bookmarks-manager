@@ -2,20 +2,7 @@ import { ChangeEvent, useEffect, useRef, useState } from "react";
 
 import "./App.css";
 import { TagStore } from "./TagStore";
-
-interface ValidateDataFailure<T> {
-  success: false;
-  error: {
-    message: string;
-  };
-}
-
-interface ValidateDataSuccess<T> {
-  success: true;
-  data: T;
-}
-
-type ValidateData<T> = ValidateDataFailure<T> | ValidateDataSuccess<T>;
+import type { ValidateData } from "./types/types-helpers";
 
 export function App() {
   const contentIDRef = useRef<HTMLInputElement>(null);
