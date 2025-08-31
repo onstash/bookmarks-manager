@@ -1,3 +1,8 @@
+import {
+  loadFromLocalStorage,
+  saveToLocalStorage,
+} from "./utils/local-storage-util";
+
 const localStorageKey = "TagStore|v1";
 
 // --------------------
@@ -8,37 +13,42 @@ interface Tag {
   name: string; // Tag name
   createdAt: number; // Timestamp
   lastUpdatedAt: number; // Timestamp
-  contentIds: Set<string>; // Content IDs associated with the tag
+  contentIds: Record<string, number>; // Content IDs associated with the tag
+}
+
+interface TagStoreJSON {
+  tags: Record<string, Tag>;
+  normalizedTagMap: Record<string, string>;
+  trie: Trie;
+  relatedGraph: Record<string, Record<string, number>>; // Array of entries for JSON
 }
 
 // --------------------
 // Main Tag Store
 // --------------------
 export class TagStore {
-  private tags: Map<string, Tag> = new Map<string, Tag>();
-  private normalizedTagMap: Map<string, string> = new Map<string, string>();
-  private trie: Trie = new Trie();
-  private relatedGraph: Map<string, Set<string>> = new Map();
+  private tags: TagStoreJSON["tags"] = {};
+  private normalizedTagMap: TagStoreJSON["normalizedTagMap"] = {};
+  private trie: TagStoreJSON["trie"] = new Trie();
+  private relatedGraph: TagStoreJSON["relatedGraph"] = {};
 
   constructor() {
     try {
-      const localStorageValue = localStorage.getItem(localStorageKey);
-      if (
-        localStorageValue &&
-        typeof localStorageKey === "string" &&
-        localStorageKey.length
-      ) {
-        this.importJSON(localStorageValue);
+      const localStorageValue = loadFromLocalStorage(localStorageKey);
+      console.log("[localStorageValue]", localStorageValue);
+      if (localStorageValue) {
+        this.importJSONFromString(localStorageValue);
       }
     } catch (err: unknown) {
       const error = err as Error;
+      console.error("Failed to load from localStorage:", error);
     }
   }
 
   // Add or update a tag
   addTag(name: string, contentId: string) {
     const key = name.toLowerCase();
-    let tag = this.tags.get(key);
+    let tag = this.tags[key];
 
     if (!tag) {
       tag = {
@@ -46,15 +56,15 @@ export class TagStore {
         name,
         createdAt: Date.now(),
         lastUpdatedAt: Date.now(),
-        contentIds: new Set(),
+        contentIds: {},
       };
-      this.tags.set(key, tag);
+      this.tags[key] = tag;
       this.trie.insert(name);
-      this.normalizedTagMap.set(key, name);
+      this.normalizedTagMap[key] = name;
     }
 
     if (contentId) {
-      tag.contentIds.add(contentId);
+      tag.contentIds[contentId] = 1; // Add to Record
       tag.lastUpdatedAt = Date.now();
     }
   }
@@ -63,60 +73,69 @@ export class TagStore {
     for (const name of names) {
       this.addTag(name, contentId);
     }
-    this.exportJSON();
+    this.exportJSONIntoString();
   }
 
   // Get suggestions for auto-complete
   suggest(prefix: string): string[] {
     return this.trie
       .suggest(prefix)
-      .map((value) => this.normalizedTagMap.get(value))
+      .map((value) => this.normalizedTagMap[value])
       .filter((x) => x !== undefined);
   }
 
   // Add relationship between tags
   addRelationship(tag1: string, tag2: string) {
-    if (!this.relatedGraph.has(tag1)) this.relatedGraph.set(tag1, new Set());
-    if (!this.relatedGraph.has(tag2)) this.relatedGraph.set(tag2, new Set());
-    this.relatedGraph.get(tag1)!.add(tag2);
-    this.relatedGraph.get(tag2)!.add(tag1);
+    if (!this.relatedGraph[tag1]) this.relatedGraph[tag1] = {};
+    if (!this.relatedGraph[tag2]) this.relatedGraph[tag2] = {};
+    this.relatedGraph[tag1][tag2] = 1;
+    this.relatedGraph[tag2][tag1] = 1;
   }
 
   // Export to JSON
-  exportJSON() {
-    const data = {
-      tags: Array.from(this.tags.values()).map((tag) => ({
-        ...tag,
-        contentIds: Array.from(tag.contentIds),
-      })),
-      relatedGraph: Array.from(this.relatedGraph.entries()).map(
-        ([key, set]) => [key, Array.from(set)]
-      ),
-      trie: this.trie.exportJSON(),
+  exportJSONIntoString(options?: { dryRun: boolean }) {
+    const data: TagStoreJSON = {
+      tags: this.tags, // No conversion needed
+      normalizedTagMap: this.normalizedTagMap,
+      relatedGraph: this.relatedGraph,
+      trie: this.trie, // Direct assignment since TrieNode is already JSON-serializable
     };
     const value = JSON.stringify(data, null, 2);
-    localStorage.setItem(localStorageKey, value);
-    console.log("[exportJSON]", value);
+    options?.dryRun === false && saveToLocalStorage(localStorageKey, value);
+    console.log("[exportJSONIntoString]", {
+      data,
+      value,
+    });
   }
 
   // Import from JSON
-  importJSON(jsonString: string) {
-    const data = JSON.parse(jsonString);
-    console.log("[importJSON]", jsonString);
-    this.tags.clear();
-    this.relatedGraph.clear();
+  importJSONFromString(jsonString: string) {
+    const data: TagStoreJSON = JSON.parse(jsonString);
+    // Clear existing data
+    this.tags = {};
+    this.normalizedTagMap = data.normalizedTagMap || {};
+    this.relatedGraph = {};
+    this.trie = new Trie();
 
-    for (const t of data.tags) {
-      this.tags.set(t.id, {
-        ...t,
-        contentIds: new Set(t.contentIds),
-      });
-      this.trie.insert(t.name);
+    // Import tags
+    if (data.tags) {
+      for (const tag of Object.values(data.tags)) {
+        this.tags[tag.id] = tag; // Direct assignment since types match
+        this.trie.insert(tag.name);
+      }
     }
 
-    for (const [key, values] of data.relatedGraph) {
-      this.relatedGraph.set(key, new Set(values));
+    // Import related graph
+    if (data.relatedGraph) {
+      for (const [key, relations] of Object.entries(data.relatedGraph)) {
+        this.relatedGraph[key] = {};
+        for (const relation of Object.keys(relations)) {
+          this.relatedGraph[key][relation] = 1;
+        }
+      }
     }
+
+    this.exportJSONIntoString({ dryRun: true });
   }
 }
 
@@ -124,20 +143,8 @@ export class TagStore {
 // Trie for auto-suggest
 // --------------------
 class TrieNode {
-  children: Map<string, TrieNode> = new Map();
+  children: Record<string, TrieNode> = {};
   isEnd: boolean = false;
-
-  toJSON(): { isEnd: boolean; children: Record<string, any> } {
-    return {
-      isEnd: this.isEnd,
-      children: Object.fromEntries(
-        Array.from(this.children.entries()).map(([char, node]) => [
-          char,
-          node.toJSON(),
-        ])
-      ),
-    };
-  }
 }
 
 class Trie {
@@ -148,10 +155,10 @@ class Trie {
     let node = this.root;
     const lowerWord = word.toLowerCase();
     for (const char of lowerWord) {
-      if (!node.children.has(char)) {
-        node.children.set(char, new TrieNode());
+      if (!node.children[char]) {
+        node.children[char] = new TrieNode();
       }
-      node = node.children.get(char)!;
+      node = node.children[char];
     }
     node.isEnd = true;
   }
@@ -163,11 +170,11 @@ class Trie {
 
     // Navigate to the prefix node
     for (const char of lowerPrefix) {
-      if (!node.children.has(char)) {
+      if (!node.children[char]) {
         console.log("[trie] suggest char doesn't exist", char);
         return results;
       }
-      node = node.children.get(char)!;
+      node = node.children[char];
     }
 
     // Start DFS from the prefix node, not the root!
@@ -182,12 +189,8 @@ class Trie {
     }
 
     // Continue DFS for all children
-    for (const [char, child] of node.children.entries()) {
+    for (const [char, child] of Object.entries(node.children)) {
       this.dfs(child, currentWord + char, results);
     }
-  }
-
-  exportJSON(): { isEnd: boolean; children: Record<string, any> } {
-    return this.root.toJSON();
   }
 }
