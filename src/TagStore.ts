@@ -5,6 +5,12 @@ import {
 
 const localStorageKey = "TagStore|v1";
 
+export type ContentIDSource = "instagram" | "twitter" | undefined;
+export const allowedContentIDSources: Set<ContentIDSource> = new Set([
+  "instagram",
+  "twitter",
+]);
+
 // --------------------
 // Tag structure
 // --------------------
@@ -13,7 +19,7 @@ interface Tag {
   name: string; // Tag name
   createdAt: number; // Timestamp
   lastUpdatedAt: number; // Timestamp
-  contentIds: Record<string, number>; // Content IDs associated with the tag
+  contentIds: Record<string, ContentIDSource>; // Content IDs associated with the tag
 }
 
 interface TagStoreJSON {
@@ -46,7 +52,7 @@ export class TagStore {
   }
 
   // Add or update a tag
-  addTag(name: string, contentId: string) {
+  addTag(name: string, contentId: string, contentIDSource: ContentIDSource) {
     const key = name.toLowerCase();
     let tag = this.tags[key];
 
@@ -64,16 +70,20 @@ export class TagStore {
     }
 
     if (contentId) {
-      tag.contentIds[contentId] = 1; // Add to Record
+      tag.contentIds[contentId] = contentIDSource; // Add to Record
       tag.lastUpdatedAt = Date.now();
     }
   }
 
-  addTags(names: Array<string>, contentId: string) {
+  addTags(
+    names: Array<string>,
+    contentId: string,
+    contentIDSource: ContentIDSource
+  ) {
     for (const name of names) {
-      this.addTag(name, contentId);
+      this.addTag(name, contentId, contentIDSource);
+      this.exportJSONIntoString();
     }
-    this.exportJSONIntoString();
   }
 
   // Get suggestions for auto-complete
@@ -94,23 +104,24 @@ export class TagStore {
 
   // Export to JSON
   exportJSONIntoString(options?: { dryRun: boolean }) {
-    const data: TagStoreJSON = {
+    console.log("[exportJSONIntoString]", {
+      options,
+    });
+    const data: Omit<TagStoreJSON, "trie"> = {
       tags: this.tags, // No conversion needed
       normalizedTagMap: this.normalizedTagMap,
       relatedGraph: this.relatedGraph,
-      trie: this.trie, // Direct assignment since TrieNode is already JSON-serializable
     };
     const value = JSON.stringify(data, null, 2);
-    options?.dryRun === false && saveToLocalStorage(localStorageKey, value);
+    !options?.dryRun && saveToLocalStorage(localStorageKey, value);
     console.log("[exportJSONIntoString]", {
       data,
-      value,
     });
   }
 
   // Import from JSON
   importJSONFromString(jsonString: string) {
-    const data: TagStoreJSON = JSON.parse(jsonString);
+    const data: Omit<TagStoreJSON, "trie"> = JSON.parse(jsonString);
     // Clear existing data
     this.tags = {};
     this.normalizedTagMap = data.normalizedTagMap || {};

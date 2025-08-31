@@ -1,14 +1,63 @@
-import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { type ChangeEvent, type SyntheticEvent, useRef, useState } from "react";
 
 import "./App.css";
-import { TagStore } from "./TagStore";
+import {
+  allowedContentIDSources,
+  type ContentIDSource,
+  TagStore,
+} from "./TagStore";
 import type { ValidateData } from "./types/types-helpers";
 import { validateString } from "./validators/string";
 
+interface FocusEvent<T = Element> extends SyntheticEvent<T> {
+  relatedTarget: EventTarget | null;
+  target: EventTarget & T;
+}
+
 export function App() {
   const contentIDRef = useRef<HTMLInputElement>(null);
-  const contentIDSourceInstagramRef = useRef<HTMLInputElement>(null);
-  const contentIDSourceTwitterRef = useRef<HTMLInputElement>(null);
+
+  const [contentIDSource, setContentIDSource] = useState<ContentIDSource>();
+  function resetContentIDSource() {
+    setContentIDSource(undefined);
+  }
+  function contentIDSourceRadioButtonOnChangeHandler(
+    event: ChangeEvent<HTMLInputElement>
+  ) {
+    const newValue = event.target.value as typeof contentIDSource;
+    setContentIDSource(() => newValue);
+  }
+
+  function contentIDOnBlurHandler(event: FocusEvent<HTMLInputElement>) {
+    const newValue = event.target.value;
+    if (newValue.startsWith("https://www.instagram.com/p/")) {
+      let instagramID = newValue.split("https://www.instagram.com/p/")[1];
+      if (instagramID.endsWith("/")) {
+        instagramID = instagramID.split("/")[0];
+      }
+      if (instagramID.length === 0) {
+        return;
+      }
+      contentIDRef.current!.value = instagramID;
+      setContentIDSource("instagram");
+    } else if (
+      newValue.startsWith("https://x.com/") &&
+      newValue.includes("/status/")
+    ) {
+      const splitParts = newValue.split("/");
+      const splitPartsCount = splitParts.length;
+      if (splitPartsCount < 6 || splitPartsCount > 7) {
+        return;
+      }
+      const twitterID =
+        splitPartsCount === 7
+          ? splitParts[splitPartsCount - 2]
+          : splitParts[splitPartsCount - 1];
+      contentIDRef.current!.value = twitterID;
+      setContentIDSource("twitter");
+    }
+  }
+
   const contentTagsStringRef = useRef<HTMLInputElement>(null);
 
   const tagStoreRef = useRef<TagStore>(null);
@@ -36,14 +85,7 @@ export function App() {
       const tags = validation.data;
       console.log("[contentTagsOnChangeHandler] tags", tags);
       const outerMostTag = tags[tags.length - 1];
-      // if (outerMostTag.length < 3) {
-      //   return;
-      // }
       tag = outerMostTag;
-      // console.log(
-      //   "[contentTagsOnChangeHandler]",
-      //   tagStoreRef.current!.exportJSON()
-      // );
     }
     console.log("[contentTagsOnChangeHandler] tag", tag);
     const suggestions = tagStoreRef.current!.suggest(tag);
@@ -54,6 +96,9 @@ export function App() {
   const [selectedContentTags, setSelectedContentTags] = useState<Set<string>>(
     new Set()
   );
+  function resetSelectedContentTags() {
+    setSelectedContentTags(new Set());
+  }
 
   function validateContentID(contentID: string): ValidateData<string> {
     return validateString(contentID, {
@@ -99,6 +144,15 @@ export function App() {
     setButtonDisabled(true);
   }
 
+  function resetAllStateAndRefs() {
+    contentIDRef.current!.value = "";
+    contentTagsStringRef.current!.value = "";
+    enableButton();
+    resetContentIDSource();
+    resetContentTagsAutoSuggestions();
+    resetSelectedContentTags();
+  }
+
   function buttonOnClickHandler() {
     resetContentTagsAutoSuggestions();
     disableButton();
@@ -108,26 +162,32 @@ export function App() {
       enableButton();
       return;
     }
+    if (!allowedContentIDSources.has(contentIDSource!)) {
+      alert("ContentIDSource must be valid");
+      enableButton();
+      return;
+    }
     const contentTagsValidation = validateContentTags(
       contentTagsStringRef.current!.value
     );
-    if (!contentTagsValidation.success && !selectedContentTags.size) {
+
+    const contentID = contentIDValidation.data;
+    let contentTags: Array<string> = [];
+    if (contentTagsValidation.success) {
+      contentTags = [...contentTags, ...contentTagsValidation.data];
+    }
+    if (selectedContentTags.size) {
+      contentTags = [...contentTags, ...[...selectedContentTags]];
+    }
+    if (!contentTags.length) {
       alert("At least 1 selected content tag must be present!");
       enableButton();
       return;
     }
-    contentIDRef.current!.value = "";
-    contentTagsStringRef.current!.value = "";
 
-    const contentID = contentIDValidation.data;
-    const contentTags = contentTagsValidation.success
-      ? contentTagsValidation.data
-      : [...selectedContentTags];
+    tagStoreRef.current!.addTags(contentTags, contentID, contentIDSource!);
 
-    tagStoreRef.current!.addTags(contentTags, contentID);
-
-    enableButton();
-    return;
+    resetAllStateAndRefs();
   }
 
   function handleContentTagSuggestionClick(suggestion: string) {
@@ -147,14 +207,20 @@ export function App() {
         <section className="flex row justify-content-between gap-8">
           <fieldset className="flex row justify-content-between gap-8">
             <label htmlFor="contentID">ContentID</label>
-            <input type="text" id="contentID" ref={contentIDRef} />
+            <input
+              type="text"
+              id="contentID"
+              ref={contentIDRef}
+              onBlur={contentIDOnBlurHandler}
+            />
           </fieldset>
           <fieldset>
             <section className="flex row justify-content-between gap-8">
               <input
                 type="radio"
                 id="contentIDSourceInstagram"
-                ref={contentIDSourceInstagramRef}
+                checked={contentIDSource === "instagram"}
+                onChange={contentIDSourceRadioButtonOnChangeHandler}
               />
               <label htmlFor="contentIDSourceInstagram">Instagram</label>
             </section>
@@ -162,7 +228,8 @@ export function App() {
               <input
                 type="radio"
                 id="contentIDSourceTwitter"
-                ref={contentIDSourceTwitterRef}
+                checked={contentIDSource === "twitter"}
+                onChange={contentIDSourceRadioButtonOnChangeHandler}
               />
               <label htmlFor="contentIDSourceTwitter">Twitter</label>
             </section>
