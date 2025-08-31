@@ -19,8 +19,12 @@ html {
   flex-direction: column;
 }
 
-.justifyContentBetween {
+.justify-content-between {
   justify-content: space-between;
+}
+
+.align-items-center {
+  align-items: center;
 }
 
 .gap-4 {
@@ -41,6 +45,14 @@ html {
 
 .spacing-8 {
   padding: 8px;
+}
+
+.border-2 {
+  border-width: 2px;
+}
+
+.border-color-grey-1 {
+  border-color: #CBCBCB;
 }
 
 .border-radius-8 {

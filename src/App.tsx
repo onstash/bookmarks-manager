@@ -21,7 +21,7 @@ export function App() {
     setContentTagsAutoSuggestions([]);
   }
   const contentTagsOnChangeHandler = (event: ChangeEvent<HTMLInputElement>) => {
-    setContentTagsAutoSuggestions(() => []);
+    resetContentTagsAutoSuggestions();
     const newValue = event.target.value;
     let tag: string = newValue.trim();
     if (newValue.includes(",")) {
@@ -142,12 +142,10 @@ export function App() {
     <>
       <h1>Bookmarks Manager</h1>
       {/* <p>Edit <code>src/App.tsx</code> to get started!</p> */}
-      <section className="flex column justifyContentBetween gap-8">
-        <section className="flex row justifyContentBetween gap-8">
+      <section className="flex column justify-content-between gap-8">
+        <section className="flex row justify-content-between gap-8">
           <label htmlFor="contentID">ContentID</label>
           <input type="text" id="contentID" ref={contentIDRef} />
-        </section>
-        <section className="flex row justifyContentBetween gap-8">
           <label htmlFor="tags">Tags (comma separated)</label>
           <input
             type="text"
@@ -155,44 +153,46 @@ export function App() {
             ref={contentTagsStringRef}
             onChange={contentTagsOnChangeHandler}
           />
-          <section className="flex row justifyContentBetween gap-4">
-            {selectedContentTags.size ? (
-              <section className="flex column gap-8">
-                {[...selectedContentTags].map((suggestion) => {
-                  return (
-                    <div
-                      key={suggestion}
-                      className="bg-green-1 spacing-8 border-radius-8 cursor-pointer"
-                      onClick={() => {
-                        if (confirm("Are you sure you want to remove it?")) {
-                          setSelectedContentTags((prev) => {
-                            const current = new Set(prev);
-                            current.delete(suggestion);
-                            return current;
-                          });
-                        }
-                      }}
-                    >
-                      {suggestion}
-                    </div>
-                  );
-                })}
-              </section>
-            ) : null}
-          </section>
-        </section>
-
-        <section className="flex row justifyContentBetween gap-8">
           <button disabled={isButtonDisabled} onClick={buttonOnClickHandler}>
             Add ContentID with Tags
           </button>
+        </section>
+        <section className="flex row align-items-center gap-8">
+          <label htmlFor="suggestionsSelected">Selected</label>
+          {selectedContentTags.size ? (
+            <section className="flex row align-items-center gap-8">
+              {[...selectedContentTags].map((suggestion) => {
+                return (
+                  <div
+                    key={suggestion}
+                    className="bg-green-1 spacing-8 border-2 border-color-grey-1 border-radius-8 cursor-pointer"
+                    onClick={() => {
+                      if (confirm("Are you sure you want to remove it?")) {
+                        setSelectedContentTags((prev) => {
+                          const current = new Set(prev);
+                          current.delete(suggestion);
+                          return current;
+                        });
+                      }
+                    }}
+                  >
+                    {suggestion}
+                  </div>
+                );
+              })}
+            </section>
+          ) : null}
+        </section>
+
+        <section className="flex row align-items-center gap-8">
+          <label htmlFor="suggestions">Suggestions</label>
           {contentTagsAutoSuggestions.length ? (
-            <section className="flex column gap-8">
+            <section className="flex row align-items-center gap-8">
               {contentTagsAutoSuggestions.map((suggestion) => {
                 return (
                   <div
                     key={suggestion}
-                    className="bg-grey-1 spacing-8 border-radius-8 cursor-pointer"
+                    className="bg-grey-1 spacing-8 border-2 border-color-grey-1 border-radius-8 cursor-pointer"
                     onClick={() => handleContentTagSuggestionClick(suggestion)}
                   >
                     {suggestion}
