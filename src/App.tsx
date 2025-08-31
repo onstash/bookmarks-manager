@@ -45,7 +45,6 @@ export function App() {
     }
     console.log("[contentTagsOnChangeHandler] tag", tag);
     const suggestions = tagStoreRef.current!.suggest(tag);
-    const suggestions2 = tagStoreRef.current!.trie.suggest(tag);
     console.log("[contentTagsOnChangeHandler] suggestions", suggestions);
     setContentTagsAutoSuggestions(() => suggestions);
   };

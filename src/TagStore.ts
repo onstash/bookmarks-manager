@@ -15,7 +15,7 @@ interface Tag {
 export class TagStore {
   private tags: Map<string, Tag> = new Map<string, Tag>();
   private normalizedTagMap: Map<string, string> = new Map<string, string>();
-  trie: Trie = new Trie();
+  private trie: Trie = new Trie();
   private relatedGraph: Map<string, Set<string>> = new Map();
 
   // Add or update a tag
