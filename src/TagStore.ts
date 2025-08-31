@@ -1,3 +1,5 @@
+const localStorageKey = "TagStore|v1";
+
 // --------------------
 // Tag structure
 // --------------------
@@ -17,6 +19,21 @@ export class TagStore {
   private normalizedTagMap: Map<string, string> = new Map<string, string>();
   private trie: Trie = new Trie();
   private relatedGraph: Map<string, Set<string>> = new Map();
+
+  constructor() {
+    try {
+      const localStorageValue = localStorage.getItem(localStorageKey);
+      if (
+        localStorageValue &&
+        typeof localStorageKey === "string" &&
+        localStorageKey.length
+      ) {
+        this.importJSON(localStorageValue);
+      }
+    } catch (err: unknown) {
+      const error = err as Error;
+    }
+  }
 
   // Add or update a tag
   addTag(name: string, contentId: string) {
@@ -46,6 +63,7 @@ export class TagStore {
     for (const name of names) {
       this.addTag(name, contentId);
     }
+    this.exportJSON();
   }
 
   // Get suggestions for auto-complete
@@ -65,7 +83,7 @@ export class TagStore {
   }
 
   // Export to JSON
-  exportJSON(): string {
+  exportJSON() {
     const data = {
       tags: Array.from(this.tags.values()).map((tag) => ({
         ...tag,
@@ -76,12 +94,15 @@ export class TagStore {
       ),
       trie: this.trie.exportJSON(),
     };
-    return JSON.stringify(data, null, 2);
+    const value = JSON.stringify(data, null, 2);
+    localStorage.setItem(localStorageKey, value);
+    console.log("[exportJSON]", value);
   }
 
   // Import from JSON
   importJSON(jsonString: string) {
     const data = JSON.parse(jsonString);
+    console.log("[importJSON]", jsonString);
     this.tags.clear();
     this.relatedGraph.clear();
 
