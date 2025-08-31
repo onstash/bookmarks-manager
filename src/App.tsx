@@ -7,6 +7,8 @@ import { validateString } from "./validators/string";
 
 export function App() {
   const contentIDRef = useRef<HTMLInputElement>(null);
+  const contentIDSourceInstagramRef = useRef<HTMLInputElement>(null);
+  const contentIDSourceTwitterRef = useRef<HTMLInputElement>(null);
   const contentTagsStringRef = useRef<HTMLInputElement>(null);
 
   const tagStoreRef = useRef<TagStore>(null);
@@ -141,25 +143,73 @@ export function App() {
   return (
     <>
       <h1>Bookmarks Manager</h1>
-      {/* <p>Edit <code>src/App.tsx</code> to get started!</p> */}
       <section className="flex column justify-content-between gap-8">
         <section className="flex row justify-content-between gap-8">
-          <label htmlFor="contentID">ContentID</label>
-          <input type="text" id="contentID" ref={contentIDRef} />
-          <label htmlFor="tags">Tags (comma separated)</label>
-          <input
-            type="text"
-            id="tags"
-            ref={contentTagsStringRef}
-            onChange={contentTagsOnChangeHandler}
-          />
+          <fieldset className="flex row justify-content-between gap-8">
+            <label htmlFor="contentID">ContentID</label>
+            <input type="text" id="contentID" ref={contentIDRef} />
+          </fieldset>
+          <fieldset>
+            <section className="flex row justify-content-between gap-8">
+              <input
+                type="radio"
+                id="contentIDSourceInstagram"
+                ref={contentIDSourceInstagramRef}
+              />
+              <label htmlFor="contentIDSourceInstagram">Instagram</label>
+            </section>
+            <section className="flex row justify-content-between gap-8">
+              <input
+                type="radio"
+                id="contentIDSourceTwitter"
+                ref={contentIDSourceTwitterRef}
+              />
+              <label htmlFor="contentIDSourceTwitter">Twitter</label>
+            </section>
+          </fieldset>
+
+          {/* Tags input section with vertical suggestions */}
+          <fieldset>
+            <section className="flex column gap-8">
+              <section className="flex row gap-8">
+                <label htmlFor="tags">Tags (comma separated)</label>
+                <input
+                  type="text"
+                  id="tags"
+                  ref={contentTagsStringRef}
+                  onChange={contentTagsOnChangeHandler}
+                />
+              </section>
+
+              {/* Auto suggestions - vertically below the input */}
+              {contentTagsAutoSuggestions.length > 0 && (
+                <section className="flex column gap-4">
+                  <label>Suggestions:</label>
+                  {contentTagsAutoSuggestions.map((suggestion) => (
+                    <div
+                      key={suggestion}
+                      className="bg-grey-1 spacing-8 border-2 border-color-grey-1 border-radius-8 cursor-pointer"
+                      onClick={() =>
+                        handleContentTagSuggestionClick(suggestion)
+                      }
+                    >
+                      {suggestion}
+                    </div>
+                  ))}
+                </section>
+              )}
+            </section>
+          </fieldset>
+
           <button disabled={isButtonDisabled} onClick={buttonOnClickHandler}>
             Add ContentID with Tags
           </button>
         </section>
-        <section className="flex row align-items-center gap-8">
-          <label htmlFor="suggestionsSelected">Selected</label>
-          {selectedContentTags.size ? (
+
+        {/* Selected tags section */}
+        {selectedContentTags.size ? (
+          <section className="flex row align-items-center gap-8">
+            <label htmlFor="suggestionsSelected">Selected</label>
             <section className="flex row align-items-center gap-8">
               {[...selectedContentTags].map((suggestion) => {
                 return (
@@ -181,27 +231,8 @@ export function App() {
                 );
               })}
             </section>
-          ) : null}
-        </section>
-
-        <section className="flex row align-items-center gap-8">
-          <label htmlFor="suggestions">Suggestions</label>
-          {contentTagsAutoSuggestions.length ? (
-            <section className="flex row align-items-center gap-8">
-              {contentTagsAutoSuggestions.map((suggestion) => {
-                return (
-                  <div
-                    key={suggestion}
-                    className="bg-grey-1 spacing-8 border-2 border-color-grey-1 border-radius-8 cursor-pointer"
-                    onClick={() => handleContentTagSuggestionClick(suggestion)}
-                  >
-                    {suggestion}
-                  </div>
-                );
-              })}
-            </section>
-          ) : null}
-        </section>
+          </section>
+        ) : null}
       </section>
     </>
   );
