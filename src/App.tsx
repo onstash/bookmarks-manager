@@ -125,7 +125,6 @@ export function App() {
 
     tagStoreRef.current!.addTags(contentTags, contentID);
 
-    console.log(tagStoreRef.current!.exportJSON());
     enableButton();
     return;
   }
