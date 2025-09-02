@@ -4,6 +4,7 @@ import "./App.css";
 import {
   allowedContentIDSources,
   type ContentIDSource,
+  type Tag,
   TagStore,
 } from "./TagStore";
 import type { ValidateData } from "./types/types-helpers";
@@ -64,6 +65,9 @@ export function App() {
   if (tagStoreRef.current === null) {
     tagStoreRef.current = new TagStore();
   }
+  const [allTagsStored, setAllTagsStored] = useState<Array<Tag>>(() =>
+    tagStoreRef.current!.getAllTags()
+  );
 
   const [contentTagsAutoSuggestions, setContentTagsAutoSuggestions] = useState<
     Array<string>
@@ -188,6 +192,7 @@ export function App() {
     tagStoreRef.current!.addTags(contentTags, contentID, contentIDSource!);
 
     resetAllStateAndRefs();
+    setAllTagsStored(() => tagStoreRef.current!.getAllTags());
   }
 
   function handleContentTagSuggestionClick(suggestion: string) {
@@ -298,6 +303,23 @@ export function App() {
                 );
               })}
             </section>
+          </section>
+        ) : null}
+
+        {allTagsStored.length ? (
+          <section className="flex column justify-content-between gap-8 height-400">
+            <label htmlFor="allTagsStored">All Tags Stored</label>
+            {allTagsStored.map((tag) => {
+              return (
+                <div
+                  key={tag.name}
+                  className="bg-green-1 spacing-8 border-2 border-color-grey-1 border-radius-8 cursor-pointer"
+                  onClick={() => handleContentTagSuggestionClick(tag.name)}
+                >
+                  {tag.name} ({Object.keys(tag.contentIds).length})
+                </div>
+              );
+            })}
           </section>
         ) : null}
       </section>

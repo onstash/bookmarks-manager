@@ -14,7 +14,7 @@ export const allowedContentIDSources: Set<ContentIDSource> = new Set([
 // --------------------
 // Tag structure
 // --------------------
-interface Tag {
+export interface Tag {
   id: string; // Unique ID for the tag
   name: string; // Tag name
   createdAt: number; // Timestamp
@@ -49,6 +49,19 @@ export class TagStore {
       const error = err as Error;
       console.error("Failed to load from localStorage:", error);
     }
+  }
+
+  getAllTags(): Array<Tag> {
+    const allTagsStored = this.tags;
+    if (allTagsStored && Object.values(allTagsStored).length) {
+      return Object.values(allTagsStored).sort((tag1, tag2) =>
+        Object.keys(tag1.contentIds).length >
+        Object.keys(tag2.contentIds).length
+          ? -1
+          : 1
+      );
+    }
+    return [];
   }
 
   // Add or update a tag
