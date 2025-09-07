@@ -307,19 +307,39 @@ export function App() {
         ) : null}
 
         {allTagsStored.length ? (
-          <section className="flex column justify-content-between gap-8 height-400">
+          <section className="flex column gap-8">
             <label htmlFor="allTagsStored">All Tags Stored</label>
-            {allTagsStored.map((tag) => {
-              return (
-                <div
-                  key={tag.name}
-                  className="bg-green-1 spacing-8 border-2 border-color-grey-1 border-radius-8 cursor-pointer"
-                  onClick={() => handleContentTagSuggestionClick(tag.name)}
-                >
-                  {tag.name} ({Object.keys(tag.contentIds).length})
-                </div>
-              );
-            })}
+            <div
+              className="max-height-400 flex column gap-8"
+              style={{
+                flexDirection: "row",
+                maxWidth: "1000px",
+                maxHeight: "400px",
+                overflowY: "auto",
+                flexWrap: "wrap",
+                // border: "3px solid red",
+                // backgroundColor: "yellow",
+              }}
+            >
+              {allTagsStored.map((tag) => {
+                return (
+                  <div
+                    key={tag.name}
+                    className="bg-green-1 spacing-8 border-2 border-color-grey-1 border-radius-8 cursor-pointer"
+                    style={{
+                      backgroundColor: "#38AC5F",
+                      alignSelf: "baseline",
+                      padding: "8px",
+                      border: "2px solid #CBCBCB",
+                      color: "#FFFFFF",
+                    }}
+                    onClick={() => handleContentTagSuggestionClick(tag.name)}
+                  >
+                    {tag.name} ({Object.keys(tag.contentIds).length})
+                  </div>
+                );
+              })}
+            </div>
           </section>
         ) : null}
       </section>

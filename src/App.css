@@ -1,10 +1,16 @@
 html {
   color-scheme: light dark;
   font-family: system-ui;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+}
+
+#root {
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .flex {
@@ -28,11 +34,11 @@ html {
 }
 
 .gap-4 {
-  gap: 4px; /* Add 'px' */
+  gap: 4px;
 }
 
 .gap-8 {
-  gap: 8px; /* Add 'px' */
+  gap: 8px;
 }
 
 .bg-grey-1 {
@@ -49,6 +55,7 @@ html {
 
 .border-2 {
   border-width: 2px;
+  border-style: solid;
 }
 
 .border-color-grey-1 {
@@ -63,6 +70,34 @@ html {
   cursor: pointer;
 }
 
-.height-400 {
-  height: 400px;
+.max-height-400 {
+  max-height: 400px; /* Changed from max-height to fixed height */
+  overflow-y: auto;
+  flex-shrink: 0; /* Prevent flex container from shrinking this element */
+}
+
+/* Additional utility classes for better layout */
+fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+input[type="text"] {
+  padding: 8px;
+  border: 1px solid #CBCBCB;
+  border-radius: 4px;
+}
+
+button {
+  padding: 8px 16px;
+  border: 1px solid #CBCBCB;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
